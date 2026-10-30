@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<script src="https://telegram.org/js/telegram-web-app.js?64"></script>
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, viewport-fit=cover">
+		<title>Obby Smash Rush</title>
+		<style>
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+body {
+	color: white;
+	background-color: black;
+	overflow: hidden;
+	touch-action: none;
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+	overscroll-behavior: none;
+}
+
+#canvas {
+	display: block;
+}
+
+#canvas:focus {
+	outline: none;
+}
+
+#status, #status-splash, #status-progress {
+	position: absolute;
+	left: 0;
+	right: 0;
+}
+
+#status, #status-splash {
+	top: 0;
+	bottom: 0;
+}
+
+#status {
+	background-color: #242424;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	visibility: hidden;
+}
+
+#status-splash {
+	max-height: 100%;
+	max-width: 100%;
+	margin: auto;
+}
+
+#status-splash.show-image--false {
+	display: none;
+}
+
+#status-splash.fullsize--true {
+	height: 100%;
+	width: 100%;
+	object-fit: contain;
+}
+
+#status-splash.use-filter--false {
+	image-rendering: pixelated;
+}
+
+#status-progress, #status-notice {
+	display: none;
+}
+
+#status-progress {
+	bottom: 10%;
+	width: 50%;
+	margin: 0 auto;
+}
+
+#status-notice {
+	background-color: #5b3943;
+	border-radius: 0.5rem;
+	border: 1px solid #9b3943;
+	color: #e0e0e0;
+	font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
+	line-height: 1.3;
+	margin: 0 2rem;
+	overflow: hidden;
+	padding: 1rem;
+	text-align: center;
+	z-index: 1;
+}
+		</style>
+		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+<link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+<meta name="description" content="Train, time your perfect smash and tear through the tower worlds.">
+	</head>
+	<body>
+		<canvas id="canvas">
+			Your browser does not support the canvas tag.
+		</canvas>
+
+		<noscript>
+			Your browser does not support JavaScript.
+		</noscript>
+
+		<div id="status">
+			<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="index.png" alt="">
+			<progress id="status-progress"></progress>
+			<div id="status-notice"></div>
+		</div>
+
+		<script>
+/* Telegram Mini App shell for Godot. No ad network, login or payment credentials. */
+(function(root){
+  'use strict';
+  if(root.SigmaTelegram)return;
+  const SAVE_KEY='obby_smash_rush_tg_save_v1';
+  const events=[];
+  const app=root.Telegram&&root.Telegram.WebApp;
+  const inTelegram=!!(app&&app.platform&&app.platform!=='unknown');
+  let listener=null,saveRead=false,entered=false,loaded=false,gate=null,playButton=null;
+  let active=!inTelegram||app.isActive!==false;
+  let hidden=!!(root.document&&root.document.hidden),backVisible=false;
+  function push(type,data={}){
+    const event={type,...data};
+    if(listener){try{listener(JSON.stringify(event));return;}catch(_){}}
+    events.push(event);
+  }
+  function call(name,...args){try{if(inTelegram&&typeof app[name]==='function')return app[name](...args);}catch(_){} }
+  function supported(version){try{return inTelegram&&typeof app.isVersionAtLeast==='function'&&app.isVersionAtLeast(version);}catch(_){return false;} }
+  function isPaused(){return !entered||!active||hidden;}
+  function isMuted(){return !active||hidden;}
+  function focusGame(){const canvas=root.document&&root.document.getElementById('canvas');if(canvas&&typeof canvas.focus==='function'&&!isMuted())canvas.focus();}
+  function syncPause(){push('platform',{paused:isPaused(),muted:isMuted()});}
+  function saveBeforePause(){push('save');}
+  function metric(value){return Math.max(0,Number.isFinite(Number(value))?Number(value):0);}
+  function viewport(){
+    const width=Math.max(1,Math.round(root.innerWidth||1280));
+    let height=Math.max(1,Math.round(root.innerHeight||800));
+    if(inTelegram&&metric(app.viewportStableHeight)>0)height=Math.max(1,Math.min(height,Math.round(app.viewportStableHeight)));
+    return {width,height};
+  }
+  function insets(){
+    const safe=inTelegram?app.safeAreaInset||{}:{};
+    const content=inTelegram?app.contentSafeAreaInset||{}:{};
+    const result={};
+    for(const side of ['left','top','right','bottom'])result[side]=metric(safe[side])+metric(content[side]);
+    return result;
+  }
+  function resize(){
+    const v=viewport(),canvas=root.document&&root.document.getElementById('canvas');
+    const ratio=Math.max(1,Number(root.devicePixelRatio)||1);
+    if(canvas){
+      const width=Math.round(v.width*ratio),height=Math.round(v.height*ratio);
+      if(canvas.width!==width)canvas.width=width;
+      if(canvas.height!==height)canvas.height=height;
+      canvas.style.width=v.width+'px';canvas.style.height=v.height+'px';
+    }
+    if(root.document&&root.document.documentElement)root.document.documentElement.style.setProperty('--osr-view-height',v.height+'px');
+  }
+  function back(value){
+    if(backVisible===!!value)return;
+    backVisible=!!value;
+    try{if(inTelegram&&app.BackButton){const fn=backVisible?'show':'hide';if(typeof app.BackButton[fn]==='function')app.BackButton[fn]();}}catch(_){}
+  }
+  function attachGate(){
+    if(!root.document||gate||entered)return;
+    resize();
+    gate=root.document.createElement('div');gate.id='tg-start-gate';
+    gate.setAttribute('style','position:fixed;left:0;top:0;width:100%;height:var(--osr-view-height,100vh);z-index:1000;display:flex;align-items:center;justify-content:center;background:#102337cc;');
+    playButton=root.document.createElement('button');playButton.id='tg-play-button';
+    playButton.textContent=loaded?'PLAY':'Loading…';playButton.disabled=!loaded;
+    playButton.setAttribute('style','font:bold 28px sans-serif;color:white;background:#239b46;border:3px solid white;border-radius:16px;padding:22px 70px;cursor:pointer;touch-action:manipulation;');
+    playButton.addEventListener('click',()=>{if(!loaded||entered)return;entered=true;gate.remove();gate=null;syncPause();focusGame();});
+    gate.appendChild(playButton);root.document.body.appendChild(gate);syncPause();
+  }
+  root.SigmaTelegram={inTelegram,viewport,insets,resize};
+  root.SigmaAds={
+    platform:'telegram',supportsRewarded:false,status:()=> 'ready',isPaused,isMuted,
+    setEventCallback(callback){listener=callback;for(const event of events.splice(0))push(event.type,event);},
+    takeEvents:()=>JSON.stringify(events.splice(0)),
+    markLoaded(){loaded=true;resize();if(playButton){playButton.textContent='PLAY';playButton.disabled=false;}call('ready');},
+    setPlaying(){},happyTime(){},requestRewarded:()=>false,requestInterstitial:()=>false,
+    setBackVisible:back,
+    readSave(){saveRead=false;try{const value=root.localStorage.getItem(SAVE_KEY);saveRead=true;return JSON.stringify({ok:true,value,epoch:0});}catch(_){return JSON.stringify({ok:false,code:'readFailed'});}},
+    writeSave(payload,epoch){if(!saveRead||epoch!==0)return JSON.stringify({ok:false,code:'saveNotLoaded'});try{root.localStorage.setItem(SAVE_KEY,payload);return JSON.stringify({ok:true});}catch(_){return JSON.stringify({ok:false,code:'writeFailed'});}},
+    retryConnect(){}
+  };
+  if(inTelegram){
+    call('expand');
+    if(supported('7.7'))call('disableVerticalSwipes');
+    if(supported('6.1')){try{app.BackButton.onClick(()=>push('back'));app.BackButton.hide();}catch(_){} }
+    if(typeof app.onEvent==='function'){
+      for(const name of ['safeAreaChanged','contentSafeAreaChanged','fullscreenChanged'])app.onEvent(name,resize);
+      app.onEvent('viewportChanged',event=>{if(!event||event.isStateStable!==false)resize();});
+      app.onEvent('deactivated',()=>{saveBeforePause();active=false;syncPause();});
+      app.onEvent('activated',()=>{active=true;resize();syncPause();focusGame();});
+    }
+  }
+  if(root.addEventListener){root.addEventListener('resize',resize);root.addEventListener('pagehide',saveBeforePause);}
+  if(root.document){
+    root.document.addEventListener('visibilitychange',()=>{if(root.document.hidden)saveBeforePause();hidden=!!root.document.hidden;syncPause();if(!hidden){resize();focusGame();}});
+    if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',attachGate,{once:true});else attachGate();
+  }
+  push('state',{value:'ready'});
+})(globalThis);
+
+</script>
+		<script src="index.js"></script>
+		<script>
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":0,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":4685956,"index.wasm":38034280},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_THREADS_ENABLED = false;
+const engine = new Engine(GODOT_CONFIG);
+
+(function () {
+	const statusOverlay = document.getElementById('status');
+	const statusProgress = document.getElementById('status-progress');
+	const statusNotice = document.getElementById('status-notice');
+
+	let initializing = true;
+	let statusMode = '';
+
+	function setStatusMode(mode) {
+		if (statusMode === mode || !initializing) {
+			return;
+		}
+		if (mode === 'hidden') {
+			statusOverlay.remove();
+			initializing = false;
+			return;
+		}
+		statusOverlay.style.visibility = 'visible';
+		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
+		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
+		statusMode = mode;
+	}
+
+	function setStatusNotice(text) {
+		while (statusNotice.lastChild) {
+			statusNotice.removeChild(statusNotice.lastChild);
+		}
+		const lines = text.split('\n');
+		lines.forEach((line) => {
+			statusNotice.appendChild(document.createTextNode(line));
+			statusNotice.appendChild(document.createElement('br'));
+		});
+	}
+
+	function displayFailureNotice(err) {
+		console.error(err);
+		if (err instanceof Error) {
+			setStatusNotice(err.message);
+		} else if (typeof err === 'string') {
+			setStatusNotice(err);
+		} else {
+			setStatusNotice('An unknown error occurred.');
+		}
+		setStatusMode('notice');
+		initializing = false;
+	}
+
+	const missing = Engine.getMissingFeatures({
+		threads: GODOT_THREADS_ENABLED,
+	});
+
+	if (missing.length !== 0) {
+		if (GODOT_CONFIG['serviceWorker'] && GODOT_CONFIG['ensureCrossOriginIsolationHeaders'] && 'serviceWorker' in navigator) {
+			let serviceWorkerRegistrationPromise;
+			try {
+				serviceWorkerRegistrationPromise = navigator.serviceWorker.getRegistration();
+			} catch (err) {
+				serviceWorkerRegistrationPromise = Promise.reject(new Error('Service worker registration failed.'));
+			}
+			// There's a chance that installing the service worker would fix the issue
+			Promise.race([
+				serviceWorkerRegistrationPromise.then((registration) => {
+					if (registration != null) {
+						return Promise.reject(new Error('Service worker already exists.'));
+					}
+					return registration;
+				}).then(() => engine.installServiceWorker()),
+				// For some reason, `getRegistration()` can stall
+				new Promise((resolve) => {
+					setTimeout(() => resolve(), 2000);
+				}),
+			]).then(() => {
+				// Reload if there was no error.
+				window.location.reload();
+			}).catch((err) => {
+				console.error('Error while registering service worker:', err);
+			});
+		} else {
+			// Display the message as usual
+			const missingMsg = 'Error\nThe following features required to run Godot projects on the Web are missing:\n';
+			displayFailureNotice(missingMsg + missing.join('\n'));
+		}
+	} else {
+		setStatusMode('progress');
+		engine.startGame({
+			'onProgress': function (current, total) {
+				if (current > 0 && total > 0) {
+					statusProgress.value = current;
+					statusProgress.max = total;
+				} else {
+					statusProgress.removeAttribute('value');
+					statusProgress.removeAttribute('max');
+				}
+			},
+		}).then(() => {
+			setStatusMode('hidden');
+		}, displayFailureNotice);
+	}
+}());
+		</script>
+	</body>
+</html>
+
+

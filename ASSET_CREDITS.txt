@@ -1,0 +1,48 @@
+OBBY SMASH RUSH — VERSION 0.7.0
+
+Original game code, block meshes, vector textures, interface illustrations,
+sound effects and the original music were created for this project.
+The four bundled tracks are Skyline Bounce (30 s), Neon Kick (45 s),
+Canyon Circuit (49.655 s) and Frost Drift (65.455 s). The three new instrumental
+scores are original programmatic compositions with synthesized instruments
+and drums; no commercial recordings or samples are used. The reproducible
+score and synthesis code is tools/compose_soundtracks.py. No Roblox game assets or branding are included.
+
+FONT
+SigmaUIFallback.otf is a renamed subset of Noto Sans CJK SC Regular.
+Copyright 2014-2021 Adobe (http://www.adobe.com/), Reserved Font Name 'Source'.
+The original font is licensed under the SIL Open Font License, Version 1.1.
+The full license is included in assets/fonts/OFL.txt.
+Source: https://github.com/notofonts/noto-cjk
+The subset includes the UI glyphs needed for all 10 translations, including the
+0.7.0 music controls, goals, guide, collection filters and Japanese kana. Wardrobe PNG portraits are rendered
+from the same procedural 3D meshes used during gameplay.
+
+Godot's built-in fallback font is used for the primary UI typeface.
+
+OUTFITS
+All forty outfit meshes, capes, masks, portraits and costume markings are original
+project assets. Superhero-inspired outfits use original parody names and emblems.
+No models, logos, textures or sound recordings from Roblox, Marvel, DC or The Boys
+are included.
+
+SDK
+The web adapter loads CrazyGames HTML5 SDK v3 from its official distribution URL.
+The SDK itself is not bundled, modified or used to simulate paid advertising.
+https://docs.crazygames.com/sdk/intro/
+https://docs.crazygames.com/sdk/data/
+https://docs.crazygames.com/sdk/video-ads/
+https://docs.crazygames.com/requirements/ads/
+
+ENGINE
+Godot Engine is distributed under the MIT license.
+https://godotengine.org/license/
+The exported web engine embeds its license and third-party notices.
+
+MARKETING ART
+The three Obby Smash Rush covers were made with the built-in ImageGen tool,
+using the project's original default avatar and prior cover as references.
+The boot splash is a size-adjusted derivative of the new landscape cover.
+Prompt specifications are supplied with ObbySmashRush_Covers_070.zip.
+
+0.7.1: HUD icons in assets/ui are original SVG vectors authored for this project.
