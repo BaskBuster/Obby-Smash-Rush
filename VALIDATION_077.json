@@ -1,0 +1,152 @@
+{
+  "release": "0.7.7-tg-desktop",
+  "created_utc": "2026-11-01T20:46:13.857964+00:00",
+  "change": "Telegram desktop clients keep a landscape PC viewport inside a narrow host window and request fullscreen on PLAY; phones retain responsive portrait and landscape layouts.",
+  "adsgram": {
+    "block_id": "57445",
+    "debug": false,
+    "reward_adapter_changed": false
+  },
+  "save": {
+    "key": "obby_smash_rush_tg_save_v1",
+    "progression_changed": false,
+    "schema_changed": false
+  },
+  "desktop_limits": {
+    "logical_min": [
+      960,
+      600
+    ],
+    "logical_max": [
+      2560,
+      1600
+    ],
+    "max_canvas_pixels": 8388608,
+    "max_canvas_edge": 4096,
+    "max_desktop_dpr": 2
+  },
+  "node": {
+    "telegram_desktop_cases": 15,
+    "adsgram_regression_cases": 21,
+    "telegram_lifecycle": "passed",
+    "web_export_bootstrap": "passed"
+  },
+  "native": [
+    {
+      "test": "adsgram_native",
+      "exit_code": 0,
+      "tail": [
+        "Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org",
+        "",
+        "ADSGRAM GAME UI, PAYOUTS AND PERSISTENCE: PASS"
+      ]
+    },
+    {
+      "test": "telegram_native",
+      "exit_code": 0,
+      "tail": [
+        "Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org",
+        "",
+        "TELEGRAM SAFE AREAS, BACK AND LIFECYCLE: PASS"
+      ]
+    },
+    {
+      "test": "graphics_quality",
+      "exit_code": 0,
+      "tail": [
+        "Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org",
+        "",
+        "GRAPHICS QUALITY: PASS"
+      ]
+    },
+    {
+      "test": "upgrade_input",
+      "exit_code": 0,
+      "tail": [
+        "UPGRADE INPUT (568, 320) compact=true",
+        "UPGRADE INPUT (1280, 800) compact=false",
+        "UPGRADE GUI INPUT: PASS"
+      ]
+    },
+    {
+      "test": "music_continuity",
+      "exit_code": 0,
+      "tail": [
+        "Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org",
+        "",
+        "MUSIC CONTINUITY: PASS"
+      ]
+    }
+  ],
+  "gui_matrix": {
+    "sizes": [
+      "1280x800",
+      "960x600",
+      "390x720",
+      "320x480",
+      "844x390",
+      "568x320"
+    ],
+    "locales": [
+      "en",
+      "de",
+      "ru",
+      "fr",
+      "pl",
+      "uk",
+      "es",
+      "zh",
+      "ja",
+      "it"
+    ]
+  },
+  "browser": {
+    "real_telegram_client": false,
+    "real_ads": false,
+    "tests": [
+      {
+        "test": "desktop_narrow_fullscreen_failure_resize_reward_return_and_reload",
+        "pass": true
+      },
+      {
+        "test": "phone_portrait_rotation_dpr3_and_input",
+        "pass": true
+      }
+    ]
+  },
+  "visual_review": [
+    "Desktop narrow-window fallback: horizontal PC layout, visible fullscreen button, no cropped controls.",
+    "Desktop 1280x800: landscape field, PC navigation and working GUI clicks.",
+    "Phone 390x720 DPR3: portrait HUD and touch targets retained."
+  ],
+  "source_files_changed_from_076": [
+    "START_HERE_RU.txt",
+    "export_presets.cfg",
+    "project.godot",
+    "tests/adsgram_browser.test.cjs",
+    "tests/adsgram_native.gd",
+    "tests/adsgram_positions.json",
+    "tests/telegram_native.gd",
+    "tests/tg_positions.json",
+    "web/mobile_bridge.js",
+    "web/mobile_shell.html",
+    "web/telegram_bridge.js"
+  ],
+  "asset_hashes": {
+    "index.html": "a6f5745429ee14d5da181d67d25027eb0923cb794abb3aefca8e1dcc293f2550",
+    "index.pck": "df0d2a3d6e8aaa244e3dabe655db8b22e27b32f827dfb83cb65a90d1d408f0b9",
+    "index.js": "8a7c7d57f7da69bb71da9de302480b87e4c7ecb467ce643665b4a288683cd18f",
+    "index.wasm": "6498359ba889796a0d95a2f71113ac184badc0f2d84cf28f4103c7e399d2d547"
+  },
+  "limits": [
+    "The specific historical freeze reported in the quoted conversation was not reproduced; no screenshot or runtime log was provided.",
+    "Actual native Telegram window management, a physical phone and real Adsgram fill were not tested; browser fixtures simulate SDK responses.",
+    "A Telegram client may reject or ignore fullscreen; the game remains playable in a landscape frame and provides a manual fullscreen/window enlargement control.",
+    "Payments for Telegram Stars and cross-device cloud saves are not part of this release."
+  ],
+  "references": [
+    "https://core.telegram.org/bots/webapps",
+    "https://docs.telegram-mini-apps.com/platform/about",
+    "https://docs.telegram-mini-apps.com/platform/viewport"
+  ]
+}

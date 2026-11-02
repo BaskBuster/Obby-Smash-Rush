@@ -1,0 +1,133 @@
+{
+  "release": "0.7.6-tg-adsgram",
+  "created_utc": "2026-11-01T19:51:24.470143+00:00",
+  "godot": "4.5.1.stable.official",
+  "adsgram": {
+    "block_id": "57445",
+    "format": "Reward",
+    "debug": false,
+    "sdk": "https://sad.adsgram.ai/js/sad.min.js",
+    "automatic_ads": false
+  },
+  "save": {
+    "key": "obby_smash_rush_tg_save_v1",
+    "wrapper_schema": 1,
+    "progress_version": 2,
+    "migration_changed": false,
+    "scope": "same origin and Telegram WebView localStorage"
+  },
+  "node": {
+    "adsgram_cases_passed": 21,
+    "telegram_bridge": "passed",
+    "web_html_bootstrap": "passed"
+  },
+  "native": [
+    {
+      "test": "adsgram_native",
+      "pass": true
+    },
+    {
+      "test": "telegram_native",
+      "pass": true
+    },
+    {
+      "test": "upgrade_input",
+      "pass": true
+    },
+    {
+      "test": "music_continuity",
+      "pass": true
+    },
+    {
+      "test": "rewards_and_strikes",
+      "pass": true
+    }
+  ],
+  "reward_ui_layout": {
+    "dimensions": [
+      "1280x800",
+      "390x720",
+      "320x480",
+      "844x390",
+      "568x320"
+    ],
+    "languages": [
+      "en",
+      "de",
+      "ru",
+      "fr",
+      "pl",
+      "uk",
+      "es",
+      "zh",
+      "ja",
+      "it"
+    ]
+  },
+  "browser": {
+    "suite": {
+      "real_ads": false,
+      "real_telegram_client": false,
+      "tests": [
+        {
+          "test": "mobile_coin_skip_success_background_duplicate_reload_music",
+          "pass": true
+        },
+        {
+          "test": "desktop_tap_no_fill_success_reload",
+          "pass": true
+        },
+        {
+          "test": "mobile_skin_unlock_equip_reload",
+          "pass": true
+        },
+        {
+          "test": "blocked_sdk_still_plays_and_saves",
+          "pass": true
+        }
+      ]
+    },
+    "web_audio": {
+      "real_ads": false,
+      "real_telegram_client": false,
+      "tests": [
+        {
+          "test": "web_audio_music_source_survives_ad",
+          "pass": true,
+          "music_source_starts": 1
+        }
+      ]
+    },
+    "desktop_final": {
+      "real_ads": false,
+      "real_telegram_client": false,
+      "tests": [
+        {
+          "test": "desktop_tap_no_fill_success_reload",
+          "pass": true
+        }
+      ]
+    },
+    "engine": "Chromium headless, SwiftShader",
+    "network": "local HTTP without COOP/COEP; official SDK scripts replaced by test fixtures"
+  },
+  "test_environment_notes": [
+    "Native reward fixture supplies rewarded capability, since a native Telegram build has no JavaScript SDK.",
+    "A repeated browser test with a strict 20-second navigation timeout timed out; after raising navigation timeout to 60 seconds the desktop test passed."
+  ],
+  "production_asset_sha256": {
+    "index.pck": "df39b3d3c9ac59cef736392cc249e9cb49bd94a30aaa0db68d1eabbe99861b54",
+    "index.html": "0d8d05f1e9ee6296da17a4907ed9832a1d0ae591efffd8d1d190534ae6378da9",
+    "index.js": "8a7c7d57f7da69bb71da9de302480b87e4c7ecb467ce643665b4a288683cd18f",
+    "index.wasm": "6498359ba889796a0d95a2f71113ac184badc0f2d84cf28f4103c7e399d2d547"
+  },
+  "unchanged_runtime": [
+    "index.js",
+    "index.wasm"
+  ],
+  "limits": [
+    "Actual Adsgram fill, moderation status and revenue were not verified.",
+    "No physical Android/iOS or live Telegram client used for these automated tests.",
+    "Telegram Stars payments and server-side cloud saves are not included in this release."
+  ]
+}

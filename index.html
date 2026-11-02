@@ -6,6 +6,7 @@
 		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, viewport-fit=cover">
 		<title>Obby Smash Rush</title>
 		<style>
+html, body { width: 100%; height: 100%; }
 html, body, #canvas {
 	margin: 0;
 	padding: 0;
@@ -115,17 +116,29 @@ body {
 		</div>
 
 		<script>
-/* Telegram Mini App shell for Godot. No ad network, login or payment credentials. */
+/* Telegram Mini App shell and Adsgram Reward adapter for Godot.
+ * The public block ID is not a bot token. Payments are not enabled here. */
 (function(root){
   'use strict';
   if(root.SigmaTelegram)return;
   const SAVE_KEY='obby_smash_rush_tg_save_v1';
+  const BLOCK_ID='57445';
+  const SDK_URL='https://sad.adsgram.ai/js/sad.min.js';
   const events=[];
   const app=root.Telegram&&root.Telegram.WebApp;
   const inTelegram=!!(app&&app.platform&&app.platform!=='unknown');
+  const platform=inTelegram?String(app.platform).toLowerCase():'';
+  const nav=root.navigator||{};
+  const mobileAgent=/Android|iPhone|iPad|iPod/i.test(nav.userAgent||'')||(/Macintosh/i.test(nav.userAgent||'')&&Number(nav.maxTouchPoints)>1);
+  const nativePhone=/^(android|android_x|ios)$/.test(platform);
+  const nativeDesktop=/^(tdesktop|macos|unigram|windows|linux)$/.test(platform);
+  const desktop=inTelegram&&(nativeDesktop||(!nativePhone&&!mobileAgent));
   let listener=null,saveRead=false,entered=false,loaded=false,gate=null,playButton=null;
   let active=!inTelegram||app.isActive!==false;
   let hidden=!!(root.document&&root.document.hidden),backVisible=false;
+  let adState=inTelegram?'saving':'unavailable',controller=null,activeAd=null;
+  let sdkScript=null,sdkTimer=null;
+  let desktopControls=null,desktopHint=null,fullscreenUnsupported=false,fullscreenAttempted=false;
   function push(type,data={}){
     const event={type,...data};
     if(listener){try{listener(JSON.stringify(event));return;}catch(_){}}
@@ -133,16 +146,78 @@ body {
   }
   function call(name,...args){try{if(inTelegram&&typeof app[name]==='function')return app[name](...args);}catch(_){} }
   function supported(version){try{return inTelegram&&typeof app.isVersionAtLeast==='function'&&app.isVersionAtLeast(version);}catch(_){return false;} }
-  function isPaused(){return !entered||!active||hidden;}
-  function isMuted(){return !active||hidden;}
+  function isPaused(){return !entered||!active||hidden||activeAd!==null;}
+  function isMuted(){return !active||hidden||activeAd!==null;}
   function focusGame(){const canvas=root.document&&root.document.getElementById('canvas');if(canvas&&typeof canvas.focus==='function'&&!isMuted())canvas.focus();}
-  function syncPause(){push('platform',{paused:isPaused(),muted:isMuted()});}
+  function syncPause(){push('platform',{paused:isPaused(),muted:isMuted()});updateDesktopControls();}
   function saveBeforePause(){push('save');}
+  function setAdState(value){adState=value;push('state',{value});}
+  function clearSDKTimer(){if(sdkTimer!==null){root.clearTimeout(sdkTimer);sdkTimer=null;}}
+  function initializeAds(){
+    try{
+      if(!root.Adsgram||typeof root.Adsgram.init!=='function')throw new Error('SDK unavailable');
+      const candidate=root.Adsgram.init({blockId:BLOCK_ID,debug:false});
+      if(!candidate||typeof candidate.show!=='function'||typeof candidate.addEventListener!=='function'||typeof candidate.removeEventListener!=='function')throw new Error('Invalid SDK');
+      controller=candidate;clearSDKTimer();setAdState('ready');return true;
+    }catch(_){controller=null;setAdState('unavailable');return false;}
+  }
+  function loadAds(){
+    if(!inTelegram||controller||sdkScript||!root.document||!root.document.head)return;
+    if(root.Adsgram){initializeAds();return;}
+    setAdState('saving');
+    const script=root.document.createElement('script');
+    sdkScript=script;script.id='osr-adsgram-sdk';script.src=SDK_URL;script.async=true;
+    const fail=()=>{
+      if(sdkScript!==script)return;
+      clearSDKTimer();sdkScript=null;script.onload=null;script.onerror=null;script.remove();setAdState('unavailable');
+    };
+    script.onload=()=>{if(sdkScript!==script)return;clearSDKTimer();sdkScript=null;initializeAds();};
+    script.onerror=fail;
+    // Only SDK loading has a timeout. A playing ad is owned by the SDK's
+    // documented lifecycle, never by a timer that could grant a free reward.
+    sdkTimer=root.setTimeout(fail,10000);
+    root.document.head.appendChild(script);
+  }
+  function finishAd(request,success,code){
+    if(activeAd!==request)return;
+    for(const [name,handler] of request.handlers){try{controller.removeEventListener(name,handler);}catch(_){}}
+    activeAd=null;
+    syncPause();
+    push('finished',{id:request.id,success,code});
+    focusGame();
+  }
+  function requestRewarded(id){
+    if(!inTelegram||!loaded||isPaused()||activeAd||adState!=='ready'||!controller||!Number.isSafeInteger(id)||id<1)return false;
+    const request={id,started:false,cancelled:false,code:'notCompleted',handlers:[]};
+    activeAd=request;
+    saveBeforePause();syncPause();
+    const on=(name,callback)=>{
+      const handler=()=>{if(activeAd===request)callback();};
+      request.handlers.push([name,handler]);controller.addEventListener(name,handler);
+    };
+    try{
+      on('onStart',()=>{if(!request.started){request.started=true;push('started',{id});}});
+      on('onSkip',()=>{request.cancelled=true;request.code='cancelled';});
+      on('onError',()=>{request.cancelled=true;request.code='adError';});
+      on('onBannerNotFound',()=>{request.cancelled=true;request.code='noFill';});
+      on('onNonStopShow',()=>{request.cancelled=true;request.code='rateLimited';});
+      on('onTooLongSession',()=>{request.cancelled=true;request.code='sessionExpired';});
+      // An interstitial completion must never become a rewarded purchase.
+      on('onComplete',()=>{request.cancelled=true;request.code='wrongBlockType';});
+      const promise=controller.show();
+      if(!promise||typeof promise.then!=='function')throw new Error('Invalid SDK response');
+      Promise.resolve(promise).then(result=>{
+        const success=!request.cancelled&&!!result&&result.done===true&&result.error===false;
+        finishAd(request,success,success?'finished':request.code);
+      },()=>finishAd(request,false,request.code));
+    }catch(_){finishAd(request,false,'adError');return false;}
+    return true;
+  }
   function metric(value){return Math.max(0,Number.isFinite(Number(value))?Number(value):0);}
   function viewport(){
-    const width=Math.max(1,Math.round(root.innerWidth||1280));
-    let height=Math.max(1,Math.round(root.innerHeight||800));
-    if(inTelegram&&metric(app.viewportStableHeight)>0)height=Math.max(1,Math.min(height,Math.round(app.viewportStableHeight)));
+    const width=Math.max(1,Math.min(16384,Math.round(metric(root.innerWidth)||1280)));
+    let height=Math.max(1,Math.min(16384,Math.round(metric(root.innerHeight)||800)));
+    if(inTelegram&&!desktop&&metric(app.viewportStableHeight)>0)height=Math.max(1,Math.min(height,Math.round(app.viewportStableHeight)));
     return {width,height};
   }
   function insets(){
@@ -152,16 +227,77 @@ body {
     for(const side of ['left','top','right','bottom'])result[side]=metric(safe[side])+metric(content[side]);
     return result;
   }
+  function frame(){
+    const v=viewport();
+    if(!desktop)return {left:0,top:0,width:v.width,height:v.height,logicalWidth:v.width,logicalHeight:v.height,boxed:false};
+    const safe=insets();
+    const availableWidth=Math.max(1,v.width-safe.left-safe.right);
+    const available=Math.max(1,v.height-safe.top-safe.bottom);
+    const width=Math.min(availableWidth,available*2.4);
+    const boxed=width/available<1.5;
+    const height=boxed?Math.min(available,width/1.6):available;
+    const scale=Math.max(960/width,600/height,Math.min(1,2560/width,1600/height));
+    return {left:Math.round(safe.left+(availableWidth-width)/2),top:Math.round(safe.top+(available-height)/2),width,height,logicalWidth:Math.round(width*scale),logicalHeight:Math.round(height*scale),boxed};
+  }
+  function fullscreenText(){
+    const code=String(app&&app.initDataUnsafe&&app.initDataUnsafe.user&&app.initDataUnsafe.user.language_code||'en').toLowerCase().split(/[-_]/)[0];
+    // Locale is used only for this local UI, never as identity or payment proof.
+    const texts={en:['Full screen','Enlarge the window for comfortable PC controls.'],ru:['На весь экран','Разверни окно для удобной игры на ПК.'],uk:['На весь екран','Розгорни вікно для зручної гри на ПК.'],de:['Vollbild','Vergrößere das Fenster für die PC-Steuerung.'],fr:['Plein écran','Agrandis la fenêtre pour jouer sur PC.'],pl:['Pełny ekran','Powiększ okno, aby wygodnie grać na komputerze.'],es:['Pantalla completa','Amplía la ventana para jugar en PC.'],zh:['全屏','放大窗口以便在电脑上操作。'],ja:['全画面','PCで操作しやすいようにウィンドウを広げてください。'],it:['Schermo intero','Ingrandisci la finestra per giocare su PC.']};
+    return texts[code]||texts.en;
+  }
+  function updateDesktopControls(){
+    if(!desktopControls)return;
+    const f=frame(),safe=insets(),room=f.top-safe.top;
+    const visible=entered&&f.boxed&&room>=56&&!app.isFullscreen&&!(root.document&&root.document.fullscreenElement)&&!activeAd&&active&&!hidden;
+    desktopControls.style.display=visible?'flex':'none';
+    desktopControls.style.top=(safe.top+6)+'px';
+    if(desktopHint)desktopHint.style.display=room>=100?'block':'none';
+  }
+  function browserFullscreen(){
+    try{
+      const doc=root.document,target=doc&&doc.documentElement;
+      if(!target||typeof target.requestFullscreen!=='function'||doc.fullscreenElement)return false;
+      const result=target.requestFullscreen();
+      if(result&&typeof result.catch==='function')result.catch(()=>updateDesktopControls());
+      return true;
+    }catch(_){updateDesktopControls();return false;}
+  }
+  function requestDesktopFullscreen(manual=false){
+    if(!desktop||activeAd)return false;
+    try{
+      if(app.isFullscreen)return true;
+      if(manual&&fullscreenAttempted&&browserFullscreen())return true;
+      if(!fullscreenUnsupported&&supported('8.0')&&typeof app.requestFullscreen==='function'){
+        fullscreenAttempted=true;app.requestFullscreen();return true;
+      }
+    }catch(_){fullscreenUnsupported=true;}
+    return browserFullscreen();
+  }
+  function attachDesktopControls(){
+    if(!desktop||desktopControls||!root.document||!root.document.body)return;
+    const text=fullscreenText();
+    desktopControls=root.document.createElement('div');desktopControls.id='tg-desktop-controls';
+    desktopControls.setAttribute('style','position:fixed;left:50%;transform:translateX(-50%);z-index:900;display:none;flex-direction:column;align-items:center;gap:6px;width:min(360px,calc(100% - 24px));font:14px sans-serif;text-align:center;color:white;');
+    const button=root.document.createElement('button');button.id='tg-desktop-fullscreen';button.textContent=text[0];
+    button.setAttribute('style','min-height:48px;padding:10px 22px;border:2px solid #a9dfff;border-radius:12px;color:white;background:#1769af;font:bold 16px sans-serif;cursor:pointer;touch-action:manipulation;');
+    button.addEventListener('click',()=>requestDesktopFullscreen(true));desktopControls.appendChild(button);
+    desktopHint=root.document.createElement('span');desktopHint.textContent=text[1];desktopControls.appendChild(desktopHint);
+    root.document.body.appendChild(desktopControls);updateDesktopControls();
+  }
   function resize(){
-    const v=viewport(),canvas=root.document&&root.document.getElementById('canvas');
-    const ratio=Math.max(1,Number(root.devicePixelRatio)||1);
+    const v=viewport(),f=frame(),canvas=root.document&&root.document.getElementById('canvas');
+    const requested=Math.max(1,metric(root.devicePixelRatio)||1);
+    // Bound the desktop drawing buffer independently of art/quality settings.
+    const ratio=Math.min(desktop?Math.min(requested,2):requested,Math.sqrt(8388608/(f.width*f.height)),4096/f.width,4096/f.height);
     if(canvas){
-      const width=Math.round(v.width*ratio),height=Math.round(v.height*ratio);
+      const width=Math.max(1,Math.floor(f.width*ratio)),height=Math.max(1,Math.floor(f.height*ratio));
       if(canvas.width!==width)canvas.width=width;
       if(canvas.height!==height)canvas.height=height;
-      canvas.style.width=v.width+'px';canvas.style.height=v.height+'px';
+      canvas.style.width=f.width+'px';canvas.style.height=f.height+'px';
+      if(desktop){canvas.style.position='absolute';canvas.style.left=f.left+'px';canvas.style.top=f.top+'px';}
     }
     if(root.document&&root.document.documentElement)root.document.documentElement.style.setProperty('--osr-view-height',v.height+'px');
+    updateDesktopControls();
   }
   function back(value){
     if(backVisible===!!value)return;
@@ -176,20 +312,21 @@ body {
     playButton=root.document.createElement('button');playButton.id='tg-play-button';
     playButton.textContent=loaded?'PLAY':'Loading…';playButton.disabled=!loaded;
     playButton.setAttribute('style','font:bold 28px sans-serif;color:white;background:#239b46;border:3px solid white;border-radius:16px;padding:22px 70px;cursor:pointer;touch-action:manipulation;');
-    playButton.addEventListener('click',()=>{if(!loaded||entered)return;entered=true;gate.remove();gate=null;syncPause();focusGame();});
+    playButton.addEventListener('click',()=>{if(!loaded||entered)return;entered=true;gate.remove();gate=null;requestDesktopFullscreen();resize();syncPause();focusGame();});
     gate.appendChild(playButton);root.document.body.appendChild(gate);syncPause();
+    attachDesktopControls();
   }
-  root.SigmaTelegram={inTelegram,viewport,insets,resize};
+  root.SigmaTelegram={inTelegram,desktop,viewport,insets,frame,resize,requestDesktopFullscreen};
   root.SigmaAds={
-    platform:'telegram',supportsRewarded:false,status:()=> 'ready',isPaused,isMuted,
+    platform:'telegram',supportsRewarded:inTelegram,blockId:BLOCK_ID,status:()=>adState,isPaused,isMuted,
     setEventCallback(callback){listener=callback;for(const event of events.splice(0))push(event.type,event);},
     takeEvents:()=>JSON.stringify(events.splice(0)),
     markLoaded(){loaded=true;resize();if(playButton){playButton.textContent='PLAY';playButton.disabled=false;}call('ready');},
-    setPlaying(){},happyTime(){},requestRewarded:()=>false,requestInterstitial:()=>false,
+    setPlaying(){},happyTime(){},requestRewarded,requestInterstitial:()=>false,
     setBackVisible:back,
     readSave(){saveRead=false;try{const value=root.localStorage.getItem(SAVE_KEY);saveRead=true;return JSON.stringify({ok:true,value,epoch:0});}catch(_){return JSON.stringify({ok:false,code:'readFailed'});}},
     writeSave(payload,epoch){if(!saveRead||epoch!==0)return JSON.stringify({ok:false,code:'saveNotLoaded'});try{root.localStorage.setItem(SAVE_KEY,payload);return JSON.stringify({ok:true});}catch(_){return JSON.stringify({ok:false,code:'writeFailed'});}},
-    retryConnect(){}
+    retryConnect(){loadAds();push('state',{value:adState});}
   };
   if(inTelegram){
     call('expand');
@@ -197,6 +334,7 @@ body {
     if(supported('6.1')){try{app.BackButton.onClick(()=>push('back'));app.BackButton.hide();}catch(_){} }
     if(typeof app.onEvent==='function'){
       for(const name of ['safeAreaChanged','contentSafeAreaChanged','fullscreenChanged'])app.onEvent(name,resize);
+      app.onEvent('fullscreenFailed',event=>{if(event&&event.error==='UNSUPPORTED')fullscreenUnsupported=true;resize();});
       app.onEvent('viewportChanged',event=>{if(!event||event.isStateStable!==false)resize();});
       app.onEvent('deactivated',()=>{saveBeforePause();active=false;syncPause();});
       app.onEvent('activated',()=>{active=true;resize();syncPause();focusGame();});
@@ -204,16 +342,18 @@ body {
   }
   if(root.addEventListener){root.addEventListener('resize',resize);root.addEventListener('pagehide',saveBeforePause);}
   if(root.document){
+    root.document.addEventListener('fullscreenchange',resize);
     root.document.addEventListener('visibilitychange',()=>{if(root.document.hidden)saveBeforePause();hidden=!!root.document.hidden;syncPause();if(!hidden){resize();focusGame();}});
     if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',attachGate,{once:true});else attachGate();
   }
-  push('state',{value:'ready'});
+  push('state',{value:adState});
+  loadAds();
 })(globalThis);
 
 </script>
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":0,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":4685956,"index.wasm":38034280},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":0,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":4699360,"index.wasm":38034280},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
