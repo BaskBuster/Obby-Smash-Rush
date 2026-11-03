@@ -126,7 +126,9 @@ body {
   const SDK_URL='https://sad.adsgram.ai/js/sad.min.js';
   const events=[];
   const app=root.Telegram&&root.Telegram.WebApp;
-  const inTelegram=!!(app&&app.platform&&app.platform!=='unknown');
+  // Some clients supply launch data but report the platform as unknown.
+  // This is a UI/SDK capability check, never identity or payment validation.
+  const inTelegram=!!(app&&((app.platform&&app.platform!=='unknown')||(typeof app.initData==='string'&&app.initData.length>0)));
   const platform=inTelegram?String(app.platform).toLowerCase():'';
   const nav=root.navigator||{};
   const mobileAgent=/Android|iPhone|iPad|iPod/i.test(nav.userAgent||'')||(/Macintosh/i.test(nav.userAgent||'')&&Number(nav.maxTouchPoints)>1);
@@ -353,7 +355,7 @@ body {
 </script>
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":0,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":4699360,"index.wasm":38034280},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":0,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.wasm":38034280,"index.078.pck":4709520},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"mainPack":"index.078.pck"};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 

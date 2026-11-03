@@ -1,4 +1,4 @@
-OBBY SMASH RUSH — VERSION 0.7.0
+OBBY SMASH RUSH — VERSION 0.7.8
 
 Original game code, block meshes, vector textures, interface illustrations,
 sound effects and the original music were created for this project.
@@ -27,12 +27,12 @@ No models, logos, textures or sound recordings from Roblox, Marvel, DC or The Bo
 are included.
 
 SDK
-The web adapter loads CrazyGames HTML5 SDK v3 from its official distribution URL.
-The SDK itself is not bundled, modified or used to simulate paid advertising.
-https://docs.crazygames.com/sdk/intro/
-https://docs.crazygames.com/sdk/data/
-https://docs.crazygames.com/sdk/video-ads/
-https://docs.crazygames.com/requirements/ads/
+This Telegram build loads the official Telegram WebApp API and Adsgram SDK.
+The public Adsgram rewarded block is 57445, with debug mode disabled.
+SDK files are fetched from their official distribution URLs, not bundled or
+modified. Tests use separate fixtures that are excluded from the Web package.
+https://core.telegram.org/bots/webapps
+https://docs.adsgram.ai/publisher/reward-interstitial-integration
 
 ENGINE
 Godot Engine is distributed under the MIT license.
@@ -46,3 +46,5 @@ The boot splash is a size-adjusted derivative of the new landscape cover.
 Prompt specifications are supplied with ObbySmashRush_Covers_070.zip.
 
 0.7.1: HUD icons in assets/ui are original SVG vectors authored for this project.
+
+0.7.8: Original SVG music arrows and slider knob; CJK font subset refreshed for all current UI strings.

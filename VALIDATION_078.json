@@ -1,0 +1,186 @@
+{
+  "release": "0.7.8-tg-ui",
+  "created_utc": "2026-11-02T23:38:55.797161+00:00",
+  "changes": [
+    "Video rewards entry and offers remain visible when Telegram/Adsgram is unavailable, with a localized explanation and disabled actions.",
+    "Telegram clients reporting unknown platform can initialize Adsgram when Mini App launch data is present.",
+    "Failed Adsgram SDK loading has an explicit retry action.",
+    "Modal return actions stay outside the scrollable content on desktop and phone.",
+    "Scrollbars are hidden while wheel and touch scrolling remain enabled; wheel does not alter sliders.",
+    "SVG music arrows, improved disabled actions, aligned settings, and additional locale fallback glyphs.",
+    "Versioned main pack prevents loading the old index.pck with the new HTML."
+  ],
+  "live_baseline": {
+    "url": "https://baskbuster.github.io/Obby-Smash-Rush/",
+    "http_status": 200,
+    "matched_release": "077",
+    "html_sha256": "a6f5745429ee14d5da181d67d25027eb0923cb794abb3aefca8e1dcc293f2550",
+    "pck_sha256": "df0d2a3d6e8aaa244e3dabe655db8b22e27b32f827dfb83cb65a90d1d408f0b9",
+    "finding": "The published 077 HTML and PCK matched the previous deliverable. Its reward entry was hidden whenever supports_rewarded returned false. Actual user Telegram launch parameters were not available."
+  },
+  "adsgram": {
+    "block_id": "57445",
+    "debug": false,
+    "real_ad_fill_verified": false,
+    "account_moderation_checked": false
+  },
+  "save": {
+    "key": "obby_smash_rush_tg_save_v1",
+    "wrapper_schema": 1,
+    "progress_schema": 2,
+    "schema_changed": false,
+    "new_cloud_sync": false
+  },
+  "node": {
+    "adsgram_cases": 23,
+    "telegram_desktop_cases": 15,
+    "telegram_lifecycle_cases": 1,
+    "passed": 39,
+    "failed": 0,
+    "web_export_bootstrap": "passed"
+  },
+  "native": [
+    {
+      "test": "ui_polish_078",
+      "exit_code": 0,
+      "tail": [
+        "Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org",
+        "",
+        "UI078 VISIBLE REWARDS, PINNED FOOTERS, HIDDEN SCROLLBARS, WHEEL AND GLYPHS: PASS"
+      ]
+    },
+    {
+      "test": "adsgram_native",
+      "exit_code": 0,
+      "tail": [
+        "Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org",
+        "",
+        "ADSGRAM GAME UI, PAYOUTS AND PERSISTENCE: PASS"
+      ]
+    },
+    {
+      "test": "telegram_native",
+      "exit_code": 0,
+      "tail": [
+        "Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org",
+        "",
+        "TELEGRAM SAFE AREAS, BACK AND LIFECYCLE: PASS"
+      ]
+    },
+    {
+      "test": "upgrade_input",
+      "exit_code": 0,
+      "tail": [
+        "UPGRADE INPUT (568, 320) compact=true",
+        "UPGRADE INPUT (1280, 800) compact=false",
+        "UPGRADE GUI INPUT: PASS"
+      ]
+    },
+    {
+      "test": "music_continuity",
+      "exit_code": 0,
+      "tail": [
+        "Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org",
+        "",
+        "MUSIC CONTINUITY: PASS"
+      ]
+    },
+    {
+      "test": "rewards_and_strikes",
+      "exit_code": 0,
+      "tail": [
+        "Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org",
+        "",
+        "REWARDS AND STRIKES: PASS"
+      ]
+    },
+    {
+      "test": "graphics_quality",
+      "exit_code": 0,
+      "tail": [
+        "Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org",
+        "",
+        "GRAPHICS QUALITY: PASS"
+      ]
+    }
+  ],
+  "gui_matrix": {
+    "sizes": [
+      "1280x800",
+      "960x600",
+      "390x720",
+      "320x480",
+      "844x390",
+      "568x320"
+    ],
+    "locales": [
+      "en",
+      "de",
+      "ru",
+      "fr",
+      "pl",
+      "uk",
+      "es",
+      "zh",
+      "ja",
+      "it"
+    ]
+  },
+  "browser": {
+    "real_telegram_client": false,
+    "real_ads": false,
+    "tests": [
+      {
+        "test": "ordinary_browser_visible_disabled_rewards_settings_footer_wheel_music_cache",
+        "pass": true,
+        "music_source_timeline": [
+          {
+            "duration": 45,
+            "offset": 0,
+            "time": 3.2711111111111113,
+            "loop": false
+          }
+        ]
+      },
+      {
+        "test": "unknown_platform_with_launch_data_blocked_sdk_retry_real_consumer_reward_reload",
+        "pass": true
+      },
+      {
+        "test": "phone_touch_swipe_hidden_scrollbar_fixed_footer_and_volume",
+        "pass": true,
+        "changed_pixel_ratio": 0.26148391812865496
+      }
+    ]
+  },
+  "visual_review": [
+    "Desktop settings top and bottom: no scrollbar, aligned pickers, visible SVG arrows, fixed return button.",
+    "Goals: visible video reward entry, muted incomplete/claimed actions, numbered milestones without missing glyphs.",
+    "Rewards without Telegram: offers visible and disabled with a localized launch instruction.",
+    "Failed SDK request: retry action visible and restores the real GDScript reward flow with a test SDK.",
+    "Phone: touch scrolling moves the content while the close action stays available."
+  ],
+  "package_checks": {
+    "main_pack": "index.078.pck",
+    "pck_bytes": 4709520,
+    "pck_sha256": "be866500b3bc5cd6c3c972005d374a2b53e73755b14ad3879ca0ef874a8343de",
+    "pack_entry_count": 205,
+    "tests_and_tools_in_pack": false,
+    "other_portal_bridges_in_pack": false,
+    "production_bridge_mirrors_match": true,
+    "runtime_js_wasm_audio_worklets_unchanged_from_077": true
+  },
+  "limits": [
+    "Browser integration uses intercepted Telegram and Adsgram fixtures. No real ad was requested or watched.",
+    "Touch tests use Chromium Android emulation, not a physical device or a real Telegram client.",
+    "Real availability still depends on Adsgram moderation, inventory and the actual Mini App launch context."
+  ],
+  "sources": [
+    "https://docs.adsgram.ai/publisher/reward-interstitial-integration",
+    "https://docs.adsgram.ai/publisher/moderation",
+    "https://core.telegram.org/bots/webapps",
+    "https://docs.godotengine.org/en/4.5/classes/class_scrollcontainer.html",
+    "https://docs.godotengine.org/en/4.5/classes/class_slider.html",
+    "https://github.com/notofonts/noto-cjk"
+  ]
+}
