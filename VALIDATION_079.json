@@ -1,0 +1,199 @@
+{
+  "release": "0.7.9-tg-stars",
+  "worker_release": "0.0.3-stars",
+  "created_utc": "2026-11-03T16:09:31.580747+00:00",
+  "features": {
+    "one_time_skin_stars": 25,
+    "all_current_40_skins_stars": 199,
+    "permanent_manual_tap_plus_50_percent_stars": 49,
+    "permanent_wall_coins_plus_50_percent_stars": 49,
+    "subscriptions": false,
+    "paid_consumable_currency": false,
+    "purchase_restore": "verified Telegram account + D1 ledger"
+  },
+  "fulfillment": {
+    "authority": "successful_payment received with authenticated Telegram webhook header",
+    "currency": "XTR",
+    "user_validation": "initData HMAC-SHA256 and auth_date validation",
+    "server_price_checks": true,
+    "precheckout_reservation": true,
+    "charge_id_deduplication": true,
+    "client_paid_callback_can_grant": false,
+    "refund_revokes_entitlement": true,
+    "earned_skin_unlocks_remain_separate": true
+  },
+  "fixes": [
+    "Ignore transient 0x0 and 1x1 viewports while backgrounded and on early activation.",
+    "Ignore stale tiny Telegram viewportStableHeight after return.",
+    "Restore desktop dialog button heights after mobile layout.",
+    "Asynchronous Telegram SDK loading and late attachment.",
+    "Visible retry for loading failure / long stall; explicit recovery after WebGL loss.",
+    "Ad loading overlay appears only during a real ad request.",
+    "First session shows training and running before optional menus."
+  ],
+  "save": {
+    "local_storage_key": "obby_smash_rush_tg_save_v1",
+    "wrapper_schema": 1,
+    "progress_schema": 2,
+    "ordinary_progress_cloud_sync_added": false,
+    "paid_entitlements_serialized_as_earned_skins": false,
+    "paid_inventory_backend": "OSR_STORE D1 binding"
+  },
+  "node": [
+    {
+      "suite": "backend_all",
+      "passed": 26,
+      "failed": 0
+    },
+    {
+      "suite": "bridge_regression",
+      "passed": 45,
+      "failed": 0
+    },
+    {
+      "suite": "stars_client",
+      "passed": 5,
+      "failed": 0
+    }
+  ],
+  "native": [
+    {
+      "test": "stars_079",
+      "pass": true,
+      "result": "STARS ENTITLEMENTS, REFUNDS, RESTORATION, ONBOARDING AND 6x10 UI: PASS"
+    },
+    {
+      "test": "smoke",
+      "pass": true,
+      "result": "SMOKE TEST: PASS"
+    },
+    {
+      "test": "upgrade_input",
+      "pass": true,
+      "result": "UPGRADE GUI INPUT: PASS"
+    },
+    {
+      "test": "ui_polish",
+      "pass": true,
+      "result": "UI078 VISIBLE REWARDS, PINNED FOOTERS, HIDDEN SCROLLBARS, WHEEL AND GLYPHS: PASS"
+    },
+    {
+      "test": "adsgram_native",
+      "pass": true,
+      "result": "ADSGRAM GAME UI, PAYOUTS AND PERSISTENCE: PASS"
+    },
+    {
+      "test": "rewards_and_strikes",
+      "pass": true,
+      "result": "REWARDS AND STRIKES: PASS"
+    },
+    {
+      "test": "telegram_native",
+      "pass": true,
+      "result": "TELEGRAM SAFE AREAS, BACK AND LIFECYCLE: PASS"
+    },
+    {
+      "test": "music_continuity",
+      "pass": true,
+      "result": "MUSIC CONTINUITY: PASS"
+    }
+  ],
+  "browser": {
+    "real_telegram_client": false,
+    "real_stars_charges": false,
+    "real_ads": false,
+    "sqlite_and_worker": "real code",
+    "tests": [
+      {
+        "test": "phone_godot_worker_skin_equip_no_coin_charge_restore_and_1px_resume",
+        "pass": true,
+        "geometry": {
+          "width": "390px",
+          "height": "720px",
+          "info": {
+            "mobile": true,
+            "desktop": false,
+            "width": 390,
+            "height": 720,
+            "left": 0,
+            "right": 0,
+            "top": 72,
+            "bottom": 20
+          }
+        }
+      },
+      {
+        "test": "desktop_stars_tap_bonus_reaches_actual_gameplay",
+        "pass": true,
+        "manual_tap_gain": 8
+      },
+      {
+        "test": "wasm_failure_retry_and_real_webgl_context_loss_recovery_keep_save",
+        "pass": true,
+        "page_errors": []
+      },
+      {
+        "test": "first_session_without_telegram_sdk_loads_and_accepts_training",
+        "pass": true
+      }
+    ]
+  },
+  "gui_matrix": {
+    "sizes": [
+      "1280x800",
+      "960x600",
+      "390x720",
+      "320x480",
+      "844x390",
+      "568x320"
+    ],
+    "locales": [
+      "en",
+      "de",
+      "ru",
+      "fr",
+      "pl",
+      "uk",
+      "es",
+      "zh",
+      "ja",
+      "it"
+    ]
+  },
+  "assets": {
+    "world_graphics_changed": false,
+    "runtime_js_wasm_unchanged_from_078": true,
+    "original_svg_star_icon": true,
+    "font_fallback_unicode_characters": 836
+  },
+  "package": {
+    "main_pack": "index.079.pck",
+    "pck_bytes": 4775972,
+    "pck_sha256": "8b79ac680d081b23ea44dd622a2f0d0be53941dc1b1856d90120fa967a5ffdef",
+    "pack_entries": 208,
+    "tests_and_backend_in_pack": false,
+    "worker_sha256": "26aaf366039cca8ae86937f10c253cb6d7bb21962351c98498d342d00fd58f7e"
+  },
+  "deployment_required": [
+    "Replace the existing Worker with 003, preserving its existing secrets.",
+    "Create D1 and bind it as OSR_STORE.",
+    "Initialize the purchase database; reconnect webhook with pre_checkout_query.",
+    "Review displayed prices and enable the store.",
+    "Upload Web 079 to the existing GitHub Pages repository."
+  ],
+  "limits": [
+    "No real Stars payment was made; Telegram API/native payment UI were simulated.",
+    "Worker logic and SQLite statements, browser rendering and exported GDScript consumers ran as real code.",
+    "Phone tests use Chromium Android emulation, not the friend's physical device.",
+    "Screenshots mentioned in the forwarded chat were not supplied; the exact original cause cannot be established.",
+    "Real Adsgram inventory and moderation were not tested."
+  ],
+  "sources": [
+    "https://core.telegram.org/bots/payments-stars",
+    "https://core.telegram.org/bots/api#precheckoutquery",
+    "https://core.telegram.org/bots/api#createinvoicelink",
+    "https://core.telegram.org/bots/api#refundstarpayment",
+    "https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app",
+    "https://core.telegram.org/bots/webapps#events-available-for-mini-apps"
+  ]
+}

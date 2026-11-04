@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8">
-		<script src="https://telegram.org/js/telegram-web-app.js?64"></script>
+		<script async src="https://telegram.org/js/telegram-web-app.js?64" onload="window.dispatchEvent(new Event('osr-telegram-ready'))"></script>
 		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, viewport-fit=cover">
 		<title>Obby Smash Rush</title>
 		<style>
@@ -117,7 +117,7 @@ body {
 
 		<script>
 /* Telegram Mini App shell and Adsgram Reward adapter for Godot.
- * The public block ID is not a bot token. Payments are not enabled here. */
+ * The public block ID is not a bot token. Stars uses a separate server bridge. */
 (function(root){
   'use strict';
   if(root.SigmaTelegram)return;
@@ -125,22 +125,24 @@ body {
   const BLOCK_ID='57445';
   const SDK_URL='https://sad.adsgram.ai/js/sad.min.js';
   const events=[];
-  const app=root.Telegram&&root.Telegram.WebApp;
+  let app=root.Telegram&&root.Telegram.WebApp;
   // Some clients supply launch data but report the platform as unknown.
   // This is a UI/SDK capability check, never identity or payment validation.
-  const inTelegram=!!(app&&((app.platform&&app.platform!=='unknown')||(typeof app.initData==='string'&&app.initData.length>0)));
-  const platform=inTelegram?String(app.platform).toLowerCase():'';
+  let inTelegram=!!(app&&((app.platform&&app.platform!=='unknown')||(typeof app.initData==='string'&&app.initData.length>0)));
+  let platform=inTelegram?String(app.platform).toLowerCase():'';
   const nav=root.navigator||{};
   const mobileAgent=/Android|iPhone|iPad|iPod/i.test(nav.userAgent||'')||(/Macintosh/i.test(nav.userAgent||'')&&Number(nav.maxTouchPoints)>1);
   const nativePhone=/^(android|android_x|ios)$/.test(platform);
   const nativeDesktop=/^(tdesktop|macos|unigram|windows|linux)$/.test(platform);
-  const desktop=inTelegram&&(nativeDesktop||(!nativePhone&&!mobileAgent));
+  let desktop=inTelegram&&(nativeDesktop||(!nativePhone&&!mobileAgent));
   let listener=null,saveRead=false,entered=false,loaded=false,gate=null,playButton=null;
   let active=!inTelegram||app.isActive!==false;
   let hidden=!!(root.document&&root.document.hidden),backVisible=false;
   let adState=inTelegram?'saving':'unavailable',controller=null,activeAd=null;
   let sdkScript=null,sdkTimer=null;
   let desktopControls=null,desktopHint=null,fullscreenUnsupported=false,fullscreenAttempted=false;
+  let telegramBound=false,renderLost=false,paymentBusy=false,lastViewport={width:1280,height:800},lastInsets={left:0,right:0,top:0,bottom:0};
+  let gateNote=null,retryButton=null,loadWatchdog=null;
   function push(type,data={}){
     const event={type,...data};
     if(listener){try{listener(JSON.stringify(event));return;}catch(_){}}
@@ -148,8 +150,8 @@ body {
   }
   function call(name,...args){try{if(inTelegram&&typeof app[name]==='function')return app[name](...args);}catch(_){} }
   function supported(version){try{return inTelegram&&typeof app.isVersionAtLeast==='function'&&app.isVersionAtLeast(version);}catch(_){return false;} }
-  function isPaused(){return !entered||!active||hidden||activeAd!==null;}
-  function isMuted(){return !active||hidden||activeAd!==null;}
+  function isPaused(){return !entered||!active||hidden||renderLost||paymentBusy||activeAd!==null;}
+  function isMuted(){return !active||hidden||renderLost||paymentBusy||activeAd!==null;}
   function focusGame(){const canvas=root.document&&root.document.getElementById('canvas');if(canvas&&typeof canvas.focus==='function'&&!isMuted())canvas.focus();}
   function syncPause(){push('platform',{paused:isPaused(),muted:isMuted()});updateDesktopControls();}
   function saveBeforePause(){push('save');}
@@ -217,17 +219,27 @@ body {
   }
   function metric(value){return Math.max(0,Number.isFinite(Number(value))?Number(value):0);}
   function viewport(){
-    const width=Math.max(1,Math.min(16384,Math.round(metric(root.innerWidth)||1280)));
-    let height=Math.max(1,Math.min(16384,Math.round(metric(root.innerHeight)||800)));
-    if(inTelegram&&!desktop&&metric(app.viewportStableHeight)>0)height=Math.max(1,Math.min(height,Math.round(app.viewportStableHeight)));
-    return {width,height};
+    if(hidden||!active)return {...lastViewport};
+    const width=Math.min(16384,Math.round(metric(root.innerWidth)||lastViewport.width));
+    let height=Math.min(16384,Math.round(metric(root.innerHeight)||lastViewport.height));
+    // Telegram can temporarily report a 1px/0px viewport while minimizing.
+    // Never resize the drawing buffer or logical UI to that transition.
+    if(width<160||height<180)return {...lastViewport};
+    const stable=inTelegram&&!desktop?metric(app.viewportStableHeight):0;
+    if(stable>=180&&stable>=height*0.55)height=Math.min(height,Math.round(stable));
+    lastViewport={width,height};
+    return {...lastViewport};
   }
   function insets(){
+    if(hidden||!active)return {...lastInsets};
     const safe=inTelegram?app.safeAreaInset||{}:{};
     const content=inTelegram?app.contentSafeAreaInset||{}:{};
     const result={};
     for(const side of ['left','top','right','bottom'])result[side]=metric(safe[side])+metric(content[side]);
-    return result;
+    const v=viewport();
+    if(result.left+result.right>v.width*0.5){result.left=Math.min(result.left,v.width*0.2);result.right=Math.min(result.right,v.width*0.2);}
+    if(result.top+result.bottom>v.height*0.6){result.top=Math.min(result.top,v.height*0.25);result.bottom=Math.min(result.bottom,v.height*0.25);}
+    lastInsets=result;return {...result};
   }
   function frame(){
     const v=viewport();
@@ -287,6 +299,7 @@ body {
     root.document.body.appendChild(desktopControls);updateDesktopControls();
   }
   function resize(){
+    if(hidden||!active||renderLost)return;
     const v=viewport(),f=frame(),canvas=root.document&&root.document.getElementById('canvas');
     const requested=Math.max(1,metric(root.devicePixelRatio)||1);
     // Bound the desktop drawing buffer independently of art/quality settings.
@@ -310,28 +323,63 @@ body {
     if(!root.document||gate||entered)return;
     resize();
     gate=root.document.createElement('div');gate.id='tg-start-gate';
-    gate.setAttribute('style','position:fixed;left:0;top:0;width:100%;height:var(--osr-view-height,100vh);z-index:1000;display:flex;align-items:center;justify-content:center;background:#102337cc;');
+    gate.setAttribute('style','position:fixed;left:0;top:0;width:100%;height:var(--osr-view-height,100vh);z-index:1000;display:flex;flex-direction:column;gap:18px;align-items:center;justify-content:center;background:#102337f5;color:white;font:16px/1.5 system-ui,sans-serif;text-align:center;');
     playButton=root.document.createElement('button');playButton.id='tg-play-button';
     playButton.textContent=loaded?'PLAY':'Loading…';playButton.disabled=!loaded;
-    playButton.setAttribute('style','font:bold 28px sans-serif;color:white;background:#239b46;border:3px solid white;border-radius:16px;padding:22px 70px;cursor:pointer;touch-action:manipulation;');
+    playButton.setAttribute('style','font:bold 24px sans-serif;color:white;background:#239b46;border:3px solid white;border-radius:16px;padding:18px 28px;max-width:90%;min-width:200px;cursor:pointer;touch-action:manipulation;');
     playButton.addEventListener('click',()=>{if(!loaded||entered)return;entered=true;gate.remove();gate=null;requestDesktopFullscreen();resize();syncPause();focusGame();});
-    gate.appendChild(playButton);root.document.body.appendChild(gate);syncPause();
+    gate.appendChild(playButton);
+    gateNote=root.document.createElement('div');gateNote.id='tg-load-note';gateNote.style.maxWidth='320px';gateNote.style.padding='0 18px';gate.appendChild(gateNote);
+    retryButton=root.document.createElement('button');retryButton.id='tg-retry-button';retryButton.textContent=loadCopy().retry;retryButton.hidden=true;
+    retryButton.setAttribute('style','padding:12px 20px;border:1px solid #a9dfff;border-radius:10px;background:#1769af;color:white;font:bold 16px system-ui;cursor:pointer;');
+    retryButton.addEventListener('click',()=>root.location.reload());gate.appendChild(retryButton);
+    root.document.body.appendChild(gate);syncPause();armLoadWatchdog();
     attachDesktopControls();
   }
-  root.SigmaTelegram={inTelegram,desktop,viewport,insets,frame,resize,requestDesktopFullscreen};
-  root.SigmaAds={
-    platform:'telegram',supportsRewarded:inTelegram,blockId:BLOCK_ID,status:()=>adState,isPaused,isMuted,
-    setEventCallback(callback){listener=callback;for(const event of events.splice(0))push(event.type,event);},
-    takeEvents:()=>JSON.stringify(events.splice(0)),
-    markLoaded(){loaded=true;resize();if(playButton){playButton.textContent='PLAY';playButton.disabled=false;}call('ready');},
-    setPlaying(){},happyTime(){},requestRewarded,requestInterstitial:()=>false,
-    setBackVisible:back,
-    readSave(){saveRead=false;try{const value=root.localStorage.getItem(SAVE_KEY);saveRead=true;return JSON.stringify({ok:true,value,epoch:0});}catch(_){return JSON.stringify({ok:false,code:'readFailed'});}},
-    writeSave(payload,epoch){if(!saveRead||epoch!==0)return JSON.stringify({ok:false,code:'saveNotLoaded'});try{root.localStorage.setItem(SAVE_KEY,payload);return JSON.stringify({ok:true});}catch(_){return JSON.stringify({ok:false,code:'writeFailed'});}},
-    retryConnect(){loadAds();push('state',{value:adState});}
-  };
-  if(inTelegram){
-    call('expand');
+  function loadCopy(){
+    const code=String(app&&app.initDataUnsafe&&app.initDataUnsafe.user&&app.initDataUnsafe.user.language_code||'en').split(/[-_]/)[0];
+    const copy={en:['Loading game…','The first launch may take longer.','Retry loading','Loading is taking longer than usual. You can wait or retry.','The image could not be restored. Reload the game; this does not clear saved progress.'],
+      ru:['Загрузка игры…','Первый запуск может занять больше времени.','Повторить загрузку','Загрузка затянулась. Можно подождать или попробовать снова.','Не удалось восстановить изображение. Перезагрузи игру — сохранения не удалятся.'],
+      uk:['Завантаження гри…','Перший запуск може тривати довше.','Повторити завантаження','Завантаження триває довше. Зачекай або спробуй знову.','Не вдалося відновити зображення. Перезавантаж гру — збереження не видаляться.'],
+      de:['Spiel wird geladen…','Der erste Start kann länger dauern.','Erneut laden','Das Laden dauert länger. Warte oder versuche es erneut.','Das Bild konnte nicht wiederhergestellt werden. Lade neu; Spielstände bleiben erhalten.'],
+      fr:['Chargement…','Le premier lancement peut être plus long.','Réessayer','Le chargement prend du temps. Attends ou réessaie.','L’image n’a pas pu être restaurée. Recharge le jeu ; les sauvegardes restent.'],
+      pl:['Ładowanie gry…','Pierwsze uruchomienie może potrwać dłużej.','Wczytaj ponownie','Ładowanie trwa dłużej. Poczekaj lub spróbuj ponownie.','Nie udało się przywrócić obrazu. Wczytaj grę ponownie; zapis pozostanie.'],
+      es:['Cargando…','El primer inicio puede tardar más.','Volver a cargar','La carga tarda más. Espera o vuelve a intentarlo.','No se pudo recuperar la imagen. Recarga el juego; se conserva el progreso.'],
+      zh:['正在加载游戏…','首次启动可能需要更长时间。','重新加载','加载时间较长。请等待或重试。','无法恢复画面。重新加载不会清除存档。'],
+      ja:['読み込み中…','初回起動には時間がかかることがあります。','再読み込み','読み込みに時間がかかっています。待つか再試行してください。','画面を復元できませんでした。再読み込みしてもセーブは消えません。'],
+      it:['Caricamento…','Il primo avvio può richiedere più tempo.','Riprova','Il caricamento richiede tempo. Attendi o riprova.','Impossibile ripristinare l’immagine. Ricarica: i salvataggi restano.']};
+    const failure={en:'The game could not be loaded. Check your connection and retry.',ru:'Не удалось загрузить игру. Проверь соединение и повтори загрузку.',uk:'Не вдалося завантажити гру. Перевір з’єднання та спробуй знову.',de:'Das Spiel konnte nicht geladen werden. Prüfe die Verbindung und versuche es erneut.',fr:'Impossible de charger le jeu. Vérifie ta connexion et réessaie.',pl:'Nie udało się załadować gry. Sprawdź połączenie i spróbuj ponownie.',es:'No se pudo cargar el juego. Comprueba la conexión y vuelve a intentarlo.',zh:'无法加载游戏。请检查网络后重试。',ja:'ゲームを読み込めませんでした。接続を確認して再試行してください。',it:'Impossibile caricare il gioco. Controlla la connessione e riprova.'};
+    const x=copy[code]||copy.en;return {loading:x[0],hint:x[1],retry:x[2],slow:x[3],graphics:x[4],failed:failure[code]||failure.en};
+  }
+  function armLoadWatchdog(){
+    // Engine.onProgress can keep repeating identical values after a rejected
+    // fetch. Never let those callbacks postpone recovery indefinitely.
+    if(loaded||loadWatchdog!==null)return;
+    loadWatchdog=root.setTimeout(()=>loadFailed('slow'),90000);
+    if(loadWatchdog&&typeof loadWatchdog.unref==='function')loadWatchdog.unref();
+    if(gateNote&&!gateNote.textContent)gateNote.textContent=loadCopy().hint;
+  }
+  function loadProgress(current,total){
+    armLoadWatchdog();
+    if(playButton&&!loaded)playButton.textContent=loadCopy().loading+(total>0?' '+Math.min(100,Math.floor(current/total*100))+'%':'');
+  }
+  function loadFailed(reason){
+    if(!gate){
+      const previous=entered;entered=false;attachGate();entered=previous;
+    }
+    if(playButton)playButton.hidden=true;
+    if(gateNote)gateNote.textContent=reason==='graphics'?loadCopy().graphics:(reason==='slow'?loadCopy().slow:loadCopy().failed);
+    if(retryButton){retryButton.textContent=loadCopy().retry;retryButton.hidden=false;}
+  }
+  function bindTelegram(){
+    if(telegramBound)return;
+    const candidate=root.Telegram&&root.Telegram.WebApp;
+    if(!candidate||!((candidate.platform&&candidate.platform!=='unknown')||(typeof candidate.initData==='string'&&candidate.initData.length>0)))return;
+    app=candidate;inTelegram=true;platform=String(app.platform||'unknown').toLowerCase();
+    desktop=/^(tdesktop|macos|unigram|windows|linux)$/.test(platform)||(!/^(android|android_x|ios)$/.test(platform)&&!mobileAgent);
+    active=app.isActive!==false;telegramBound=true;
+    root.SigmaTelegram.inTelegram=true;root.SigmaTelegram.desktop=desktop;root.SigmaAds.supportsRewarded=true;
+    call('ready');call('expand');
     if(supported('7.7'))call('disableVerticalSwipes');
     if(supported('6.1')){try{app.BackButton.onClick(()=>push('back'));app.BackButton.hide();}catch(_){} }
     if(typeof app.onEvent==='function'){
@@ -341,25 +389,155 @@ body {
       app.onEvent('deactivated',()=>{saveBeforePause();active=false;syncPause();});
       app.onEvent('activated',()=>{active=true;resize();syncPause();focusGame();});
     }
+    attachDesktopControls();resize();syncPause();loadAds();
   }
-  if(root.addEventListener){root.addEventListener('resize',resize);root.addEventListener('pagehide',saveBeforePause);}
+  root.SigmaTelegram={inTelegram,desktop,viewport,insets,frame,resize,requestDesktopFullscreen,loadProgress,loadFailed,
+    setPaymentBusy(value){if(value)saveBeforePause();paymentBusy=!!value;syncPause();if(!paymentBusy)focusGame();}
+  };
+  root.SigmaAds={
+    platform:'telegram',supportsRewarded:inTelegram,blockId:BLOCK_ID,status:()=>adState,isPaused,isMuted,
+    setEventCallback(callback){listener=callback;for(const event of events.splice(0))push(event.type,event);},
+    takeEvents:()=>JSON.stringify(events.splice(0)),
+    markLoaded(){loaded=true;if(loadWatchdog!==null)root.clearTimeout(loadWatchdog);resize();if(playButton){playButton.textContent='PLAY';playButton.disabled=false;playButton.hidden=false;}if(retryButton)retryButton.hidden=true;if(gateNote)gateNote.textContent='';call('ready');},
+    setPlaying(){},happyTime(){},requestRewarded,requestInterstitial:()=>false,
+    setBackVisible:back,
+    readSave(){saveRead=false;try{const value=root.localStorage.getItem(SAVE_KEY);saveRead=true;return JSON.stringify({ok:true,value,epoch:0});}catch(_){return JSON.stringify({ok:false,code:'readFailed'});}},
+    writeSave(payload,epoch){if(!saveRead||epoch!==0)return JSON.stringify({ok:false,code:'saveNotLoaded'});try{root.localStorage.setItem(SAVE_KEY,payload);return JSON.stringify({ok:true});}catch(_){return JSON.stringify({ok:false,code:'writeFailed'});}},
+    retryConnect(){bindTelegram();loadAds();push('state',{value:adState});}
+  };
+  bindTelegram();
+  if(root.addEventListener){
+    root.addEventListener('resize',resize);root.addEventListener('pagehide',saveBeforePause);root.addEventListener('osr-telegram-ready',bindTelegram);
+    root.addEventListener('unhandledrejection',event=>{
+      const reason=event&&event.reason;
+      const trace=String(reason&&reason.stack||reason||'');
+      if(!loaded&&/(?:index\.js|\.wasm|loadFetch)/.test(trace)){
+        if(typeof event.preventDefault==='function')event.preventDefault();
+        loadFailed('engineNetwork');
+      }
+    });
+  }
   if(root.document){
     root.document.addEventListener('fullscreenchange',resize);
     root.document.addEventListener('visibilitychange',()=>{if(root.document.hidden)saveBeforePause();hidden=!!root.document.hidden;syncPause();if(!hidden){resize();focusGame();}});
-    if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',attachGate,{once:true});else attachGate();
+    if(root.document.body)attachGate();else if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',attachGate,{once:true});else attachGate();
+    const canvas=root.document.getElementById('canvas');
+    if(canvas&&typeof canvas.addEventListener==='function')canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();saveBeforePause();renderLost=true;syncPause();loadFailed('graphics');});
   }
   push('state',{value:adState});
   loadAds();
 })(globalThis);
 
+/* Telegram Stars. Paid access comes only from the authenticated Worker ledger.
+ * An invoice callback is a signal to refresh, never proof of purchase. */
+(function(root){
+  'use strict';
+  if(root.SigmaStars)return;
+  const API='https://worker.bbodaska.workers.dev';
+  const TERMS='2026-11-03';
+  const events=[];
+  let started=false,refreshing=false,busy=false,status='loading',result='',products=[],catalog=[],userId='',canPurchase=false,lastAuth='',sequence=0,activeJob=null,lastRefresh=0;
+  const validSku=id=>typeof id==='string'&&(/^(?:all_skins|tap_plus|coins_plus)$/.test(id)||/^skin_(?:[1-9]|[12][0-9]|3[0-9])$/.test(id));
+  const app=()=>root.Telegram&&root.Telegram.WebApp;
+  const auth=()=>typeof app()?.initData==='string'?app().initData:'';
+  const owns=sku=>products.includes(sku)||(sku.startsWith('skin_')&&products.includes('all_skins'));
+  function snapshot(){return {status,result,busy,products:[...products],catalog:catalog.map(x=>({...x})),user_id:userId,can_purchase:canPurchase,terms_version:TERMS};}
+  function changed(){events.push({type:'state',...snapshot()});}
+  function pause(value){if(root.SigmaTelegram&&typeof root.SigmaTelegram.setPaymentBusy==='function')root.SigmaTelegram.setPaymentBusy(value);}
+  function later(fn,time){const timer=root.setTimeout(fn,time);if(timer&&typeof timer.unref==='function')timer.unref();return timer;}
+  async function api(path,fields={}){
+    const init=auth();
+    if(!init)throw Object.assign(new Error(),{code:'openInTelegram'});
+    const controller=new root.AbortController(),timer=later(()=>controller.abort(),12000);
+    try{
+      const response=await root.fetch(API+'/api/shop/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:init,...fields}),signal:controller.signal,cache:'no-store',credentials:'omit',redirect:'error'});
+      let data;try{data=await response.json();}catch{throw Object.assign(new Error(),{code:'shopUnavailable'});}
+      if(init!==auth()){products=[];catalog=[];userId='';canPurchase=false;changed();throw Object.assign(new Error(),{code:'invalidAuth'});}
+      if(!response.ok||data.ok!==true)throw Object.assign(new Error(),{code:typeof data.code==='string'?data.code:'shopUnavailable'});
+      return data;
+    }catch(error){if(error.code)throw error;throw Object.assign(new Error(),{code:'shopUnavailable'});}
+    finally{root.clearTimeout(timer);}
+  }
+  function apply(data){
+    if(!/^[1-9][0-9]*$/.test(String(data.user_id))||!Array.isArray(data.products)||!data.products.every(validSku)||!Array.isArray(data.catalog))throw Object.assign(new Error(),{code:'shopUnavailable'});
+    if(!data.catalog.every(x=>x&&validSku(x.id)&&Number.isSafeInteger(x.stars)&&x.stars>0&&x.stars<=100000&&typeof x.title==='string'))throw Object.assign(new Error(),{code:'shopUnavailable'});
+    userId=String(data.user_id);products=[...new Set(data.products)];catalog=data.catalog.map(x=>({id:x.id,stars:x.stars,title:x.title}));
+    canPurchase=data.can_purchase===true;status=canPurchase?'ready':'closed';lastRefresh=Date.now();changed();
+  }
+  async function refresh(){
+    if(refreshing||busy)return false;
+    const current=auth();
+    if(lastAuth!==current){lastAuth=current;products=[];catalog=[];userId='';canPurchase=false;changed();}
+    if(!current){status='openInTelegram';canPurchase=false;changed();return false;}
+    refreshing=true;status='loading';result='';changed();
+    try{apply(await api('state'));return true;}
+    catch(error){status=error.code||'shopUnavailable';canPurchase=false;changed();return false;}
+    finally{refreshing=false;}
+  }
+  function finish(job,value){
+    if(activeJob!==job)return;
+    const tg=app();if(job.handler&&typeof tg?.offEvent==='function')tg.offEvent('invoiceClosed',job.handler);
+    activeJob=null;busy=false;result=value;pause(false);changed();
+  }
+  async function reconcile(job,nativeStatus){
+    if(activeJob!==job||job.closed)return;
+    job.closed=true;result=nativeStatus==='paid'||nativeStatus==='pending'?'pending':nativeStatus==='cancelled'?'cancelled':'paymentFailed';changed();
+    const attempts=nativeStatus==='paid'||nativeStatus==='pending'?12:1;
+    for(let i=0;i<attempts;i++){
+      if(activeJob!==job)return;
+      try{apply(await api('state'));if(owns(job.sku)){finish(job,'purchased');return;}}
+      catch(error){status=error.code||'shopUnavailable';changed();}
+      if(i<attempts-1)await new Promise(resolve=>later(resolve,Math.min(3000,750+i*250)));
+    }
+    finish(job,nativeStatus==='paid'||nativeStatus==='pending'?'pending':nativeStatus==='cancelled'?'cancelled':'paymentFailed');
+  }
+  async function buy(sku){
+    if(!started||busy||refreshing||!canPurchase||!validSku(sku)||owns(sku))return false;
+    if(typeof app()?.openInvoice!=='function'){status='clientUnsupported';changed();return false;}
+    const job={id:++sequence,sku,closed:false,url:''};activeJob=job;busy=true;result='creatingInvoice';pause(true);changed();
+    try{
+      const invoice=await api('invoice',{sku,terms_version:TERMS});
+      if(activeJob!==job)return false;
+      if(invoice.sku!==sku||!Number.isSafeInteger(invoice.stars)||!/^https:\/\/t\.me\/\$[A-Za-z0-9_-]+$/.test(invoice.invoice_url))throw Object.assign(new Error(),{code:'invoiceFailed'});
+      job.url=invoice.invoice_url;
+      // Native Telegram shows the final item and XTR price before charging.
+      const tg=app();
+      if(typeof tg.onEvent==='function'){
+        job.handler=event=>{if(event?.url===job.url)reconcile(job,event.status);};
+        tg.onEvent('invoiceClosed',job.handler);
+      }
+      tg.openInvoice(job.url,value=>{
+        if(job.handler&&typeof tg.offEvent==='function')tg.offEvent('invoiceClosed',job.handler);
+        reconcile(job,value);
+      });
+      return true;
+    }catch(error){status=error.code||'invoiceFailed';finish(job,'paymentFailed');return false;}
+  }
+  root.SigmaStars={
+    start(){if(started)return;started=true;refresh();},
+    refresh,buy,
+    snapshot:()=>JSON.stringify(snapshot()),
+    takeEvents:()=>JSON.stringify(events.splice(0)),
+    termsUrl:()=>API+'/terms',
+    openTerms(){if(typeof app()?.openLink==='function')app().openLink(API+'/terms');else if(typeof root.open==='function')root.open(API+'/terms','_blank','noopener');}
+  };
+  if(root.addEventListener)root.addEventListener('osr-telegram-ready',()=>{if(started)refresh();});
+  if(root.document?.addEventListener)root.document.addEventListener('visibilitychange',()=>{if(started&&!root.document.hidden&&!busy&&Date.now()-lastRefresh>30000)refresh();});
+  // Refresh after a refund or a payment completed while the app was minimized.
+  function bindResume(){const tg=app();if(tg&&typeof tg.onEvent==='function')tg.onEvent('activated',()=>{if(started&&!busy&&Date.now()-lastRefresh>30000)refresh();});}
+  bindResume();if(root.addEventListener)root.addEventListener('osr-telegram-ready',bindResume);
+})(globalThis);
+
+
 </script>
-		<script src="index.js"></script>
+		<script src="index.js" onerror="window.SigmaTelegram.loadFailed('engineNetwork')"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":0,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.wasm":38034280,"index.078.pck":4709520},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"mainPack":"index.078.pck"};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":0,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.wasm":38034280,"index.079.pck":4775972},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"mainPack":"index.079.pck"};
 const GODOT_THREADS_ENABLED = false;
-const engine = new Engine(GODOT_CONFIG);
+const engine = typeof Engine === 'function' ? new Engine(GODOT_CONFIG) : null;
 
 (function () {
+	if(typeof Engine!=='function'){window.SigmaTelegram.loadFailed('engineNetwork');return;}
 	const statusOverlay = document.getElementById('status');
 	const statusProgress = document.getElementById('status-progress');
 	const statusNotice = document.getElementById('status-notice');
@@ -394,6 +572,7 @@ const engine = new Engine(GODOT_CONFIG);
 	}
 
 	function displayFailureNotice(err) {
+		window.SigmaTelegram.loadFailed('engineFailed');
 		console.error(err);
 		if (err instanceof Error) {
 			setStatusNotice(err.message);
@@ -445,6 +624,7 @@ const engine = new Engine(GODOT_CONFIG);
 		setStatusMode('progress');
 		engine.startGame({
 			'onProgress': function (current, total) {
+				window.SigmaTelegram.loadProgress(current,total);
 				if (current > 0 && total > 0) {
 					statusProgress.value = current;
 					statusProgress.max = total;

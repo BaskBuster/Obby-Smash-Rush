@@ -1,4 +1,4 @@
-OBBY SMASH RUSH — VERSION 0.7.8
+OBBY SMASH RUSH — VERSION 0.7.9
 
 Original game code, block meshes, vector textures, interface illustrations,
 sound effects and the original music were created for this project.
@@ -47,4 +47,6 @@ Prompt specifications are supplied with ObbySmashRush_Covers_070.zip.
 
 0.7.1: HUD icons in assets/ui are original SVG vectors authored for this project.
 
-0.7.8: Original SVG music arrows and slider knob; CJK font subset refreshed for all current UI strings.
+0.7.9: Original SVG music arrows and slider knob; CJK font subset refreshed for all current UI strings.
+
+Telegram Stars storefront and Worker/D1 implementation: original project code. Star icon: original SVG. Runtime JS/WASM is unchanged from verified build 078.
