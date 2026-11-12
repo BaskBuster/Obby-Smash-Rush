@@ -1,0 +1,128 @@
+{
+  "release": "0.8.1-tg-ultra",
+  "created_utc": "2026-11-11T15:53:08.061235+00:00",
+  "features": [
+    "Physical-pixel render target fixes high-DPI 3D blur without resizing UI",
+    "High: MSAA 4x and anisotropic texture filtering",
+    "Ultra: 125% render resolution per axis, MSAA 8x request, anisotropy 16x, 8192 directional shadow atlas",
+    "Existing globe language picker and all 10 languages retained"
+  ],
+  "native": [
+    {
+      "suite": "graphics_quality",
+      "passed": true,
+      "result": "GRAPHICS QUALITY: PASS"
+    },
+    {
+      "suite": "render_density_081",
+      "passed": true,
+      "result": "RETINA 3D RESOLUTION, ULTRA, ORIENTATION, UI AND SAVE SAFETY: PASS"
+    },
+    {
+      "suite": "music_continuity",
+      "passed": true,
+      "result": "MUSIC CONTINUITY: PASS"
+    },
+    {
+      "suite": "language_080",
+      "passed": true,
+      "result": "LANGUAGE SHORTCUT: 10 LANGUAGES x 6 VIEWPORTS, INPUT, PERSISTENCE, BACK, RUN PAUSE: PASS"
+    },
+    {
+      "suite": "smoke",
+      "passed": true,
+      "result": "SMOKE TEST: PASS"
+    },
+    {
+      "suite": "stars_079",
+      "passed": true,
+      "result": "STARS ENTITLEMENTS, REFUNDS, RESTORATION, ONBOARDING AND 6x10 UI: PASS"
+    },
+    {
+      "suite": "ui_polish_078",
+      "passed": true,
+      "result": "UI078 VISIBLE REWARDS, PINNED FOOTERS, HIDDEN SCROLLBARS, WHEEL AND GLYPHS: PASS"
+    },
+    {
+      "suite": "upgrade_input",
+      "passed": true,
+      "result": "UPGRADE GUI INPUT: PASS"
+    }
+  ],
+  "visual": "Real Godot 4.5.1 OpenGL desktop/portrait snapshots and actual mouse selection of Ultra reviewed",
+  "density_checks": [
+    {
+      "logical": [
+        390,
+        720
+      ],
+      "dpr": 3,
+      "high": [
+        1170,
+        2160
+      ],
+      "ultra": [
+        1462,
+        2700
+      ]
+    },
+    {
+      "logical": [
+        844,
+        390
+      ],
+      "dpr": 3,
+      "high": [
+        2532,
+        1170
+      ],
+      "ultra": [
+        3165,
+        1462
+      ]
+    },
+    {
+      "logical": [
+        1280,
+        800
+      ],
+      "dpr": 2,
+      "high": [
+        2560,
+        1600
+      ],
+      "ultra": [
+        3200,
+        2000
+      ]
+    }
+  ],
+  "runtime_unchanged": {
+    "index.js": "8a7c7d57f7da69bb71da9de302480b87e4c7ecb467ce643665b4a288683cd18f",
+    "index.wasm": "6498359ba889796a0d95a2f71113ac184badc0f2d84cf28f4103c7e399d2d547",
+    "index.audio.worklet.js": "5b476a9c9ce642c0ee4256436d1bc31d9c38f868aca0f9a8e2a57c18d2dec2a3",
+    "index.audio.position.worklet.js": "be33985bc7160d6bf9646f259cd86b259cd67b02ccb297ee5c44f8ac84327bc8"
+  },
+  "payments_saves_and_platform_bridges_unchanged": {
+    "scripts/progression.gd": "16d94a11ee023c0ca915f1a33a8e3f47944101ec3744564aa3ccc6bf1a6017ea",
+    "scripts/cloud_save.gd": "50d87b261f931a1fdf3d6a5fc2a5099cf099e95fd94b8d06de2ebbe6fe6a2c39",
+    "scripts/stars_store.gd": "b10e2577222038807d154d26bcd004294b880b444f6fb561e290a36d65d7dddb",
+    "web/stars_bridge.js": "9f6680b35e2c2c58d313048f2d2ce147d2dcaa24bc92984fe06b0df0ae7ce08f",
+    "web/mobile_bridge.js": "73672ad035dd6d8ca95336fd50050a4f61c864a7bc17afe8c33b20fe4de297b9",
+    "web/telegram_bridge.js": "292f4b484b770bf828e4b32adfb6538cd68f3b1ccef7a6c9da5e71e84bea94ab",
+    "telegram_backend/worker.js": "724f452c16d99fd7b8875fbf0f15fd63936ed8c64d79fa356ff3ed93c55b9ccc",
+    "telegram_backend/schema.sql": "0fa61be0bda7b543b3081736df38c3869f840f300b3ef22a9d4fa278f867eaba"
+  },
+  "pack": {
+    "name": "index.081.pck",
+    "bytes": 4796688,
+    "sha256": "8ef844abfa432f1a956d3d567a3fb0dfdb7bf44307b937ed0cd7187fb2b54ee0",
+    "engine": "4.5.1.stable.official.f62fdbde1"
+  },
+  "limits": [
+    "No physical Android device tested this release.",
+    "No live Stars charge or real Adsgram inventory tested.",
+    "MSAA support depends on the device/driver; Ultra is deliberately more demanding.",
+    "Browser bootstrap verified in Node and exported pack booted in Godot; full browser WebGL playthrough not repeated."
+  ]
+}
