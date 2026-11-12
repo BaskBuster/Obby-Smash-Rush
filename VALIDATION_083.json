@@ -1,0 +1,69 @@
+{
+  "release": "0.8.3-tg-rushline",
+  "song_count": 5,
+  "picker_items": 6,
+  "new_song": {
+    "id": "rushline",
+    "index": 4,
+    "menu_item": 5,
+    "title": "Rushline",
+    "duration": 37.5,
+    "codec": "Ogg Vorbis",
+    "sample_rate": 32000,
+    "bpm": 128,
+    "sha256": "d99736aaf2ce5c86a2209efd5002cdf90d46c17f209872d0f3869ab218258492"
+  },
+  "checks": [
+    {
+      "suite": "playlist",
+      "passed": true,
+      "result": "FIVE TRACKS, PLAYLIST AND AUDIO CONTINUITY: PASS"
+    },
+    {
+      "suite": "music_continuity",
+      "passed": true,
+      "result": "MUSIC CONTINUITY: PASS"
+    },
+    {
+      "suite": "smooth_082",
+      "passed": true,
+      "result": "SMOOTH082 WALLET, ADAPTIVE QUALITY, POOL, TRAVEL, PROGRESS: PASS"
+    },
+    {
+      "suite": "stars_079",
+      "passed": true,
+      "result": "STARS ENTITLEMENTS, REFUNDS, RESTORATION, ONBOARDING AND 6x10 UI: PASS"
+    },
+    {
+      "suite": "exported_song",
+      "passed": true,
+      "result": "EXPORTED PACK: RUSHLINE VORBIS 37.5s + GAME 0.8.3: PASS"
+    }
+  ],
+  "preserved_runtime_files_with_explicit_arch_depth_fix": {
+    "scripts/main.gd": "ef54dd92c78ec30fc879f800cebe8e0f4697cf3ae2fbc68b5d142fe49e10802d",
+    "scripts/world.gd": "d7d421a4d55f25ce7fbf50b82265679a4720b40cc8af70d4eec695dc82e908a2",
+    "scripts/progression.gd": "16d94a11ee023c0ca915f1a33a8e3f47944101ec3744564aa3ccc6bf1a6017ea",
+    "scripts/cloud_save.gd": "50d87b261f931a1fdf3d6a5fc2a5099cf099e95fd94b8d06de2ebbe6fe6a2c39",
+    "scripts/stars_store.gd": "b10e2577222038807d154d26bcd004294b880b444f6fb561e290a36d65d7dddb",
+    "web/stars_bridge.js": "9f6680b35e2c2c58d313048f2d2ce147d2dcaa24bc92984fe06b0df0ae7ce08f",
+    "web/mobile_bridge.js": "73672ad035dd6d8ca95336fd50050a4f61c864a7bc17afe8c33b20fe4de297b9",
+    "web/telegram_bridge.js": "292f4b484b770bf828e4b32adfb6538cd68f3b1ccef7a6c9da5e71e84bea94ab",
+    "telegram_backend/worker.js": "724f452c16d99fd7b8875fbf0f15fd63936ed8c64d79fa356ff3ed93c55b9ccc",
+    "telegram_backend/schema.sql": "0fa61be0bda7b543b3081736df38c3869f840f300b3ef22a9d4fa278f867eaba",
+    "assets/skyline_bounce.wav": "d579ea284e285e1325accb7e49ae08a5db53133e37724706a89cec4d4e0e262e",
+    "assets/music/neon_kick.ogg": "bbefde22b6453bc642091ff98a9d475c5a65e27a2841927173811ed0af0caf55",
+    "assets/music/canyon_circuit.ogg": "ab9524653859f756141fc619442a5c47a7af2ca30443a9cf75a5d014b081d8a0",
+    "assets/music/frost_drift.ogg": "68bbb57f93d7425a7cefda27a9c484d51ad3c7ff309c24c813b9d4cb7cb18dd6"
+  },
+  "arch_fix": "Colored top blocks protrude 0.05m beyond the beam to avoid coplanar face shimmer",
+  "continuity": "Rushline remains the same playback object across volumes and language changes; repeat and playlist ending transitions tested",
+  "pack": {
+    "name": "index.083.pck",
+    "bytes": 5283120,
+    "sha256": "567309c4537426ff9feff5ec2c80f2c776bfefae07a8992e8d31e8424abb77ee"
+  },
+  "limits": [
+    "Native audio/logic tests run with the headless audio backend; no physical Android speaker test."
+  ]
+}
