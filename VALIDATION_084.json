@@ -1,0 +1,89 @@
+{
+  "release": "0.8.4-tg-shop-fix",
+  "date": "2026-11-13",
+  "base_release": "0.8.3-tg-rushline",
+  "fix": "The upgrades coin balance keeps its natural single-line width during recursive dialog preparation and resizing.",
+  "before_screenshot_case": {
+    "balance": "4 151",
+    "lines": 6,
+    "label_width": 1,
+    "wallet_height": 155
+  },
+  "after_screenshot_case": {
+    "heading_height": 30.0,
+    "label_width": 36.0,
+    "language": "ru",
+    "lines": 1,
+    "scale": 1.0,
+    "size": "(1920, 1010)",
+    "text": "4 151",
+    "text_width": 36.0,
+    "wallet": "[P: (991.5, 162.0), S: (72.0, 30.0)]"
+  },
+  "layout_cases": 600,
+  "languages": [
+    "de",
+    "en",
+    "es",
+    "fr",
+    "it",
+    "ja",
+    "pl",
+    "ru",
+    "uk",
+    "zh"
+  ],
+  "sizes": [
+    "(1280, 800)",
+    "(1920, 1010)",
+    "(320, 568)",
+    "(390, 844)",
+    "(568, 320)",
+    "(844, 390)",
+    "(960, 600)"
+  ],
+  "all_layout_cases_passed": true,
+  "maximum_heading_height": 63.0,
+  "purchase_GUI_test": {
+    "passed": true,
+    "window_sizes": 5,
+    "note": "Real mouse-button events, including touch-emulated clicks, reach all three upgrades."
+  },
+  "exported_pack_test": {
+    "passed": true,
+    "cases": 24,
+    "loaded_from_empty_project": true
+  },
+  "web_bootstrap_test": {
+    "passed": true
+  },
+  "unchanged_runtime_files": {
+    "scripts/cloud_save.gd": "50d87b261f931a1fdf3d6a5fc2a5099cf099e95fd94b8d06de2ebbe6fe6a2c39",
+    "scripts/music_catalog.gd": "384a68945b0c0f3cdb0a09b864f2196d108fe9e82327555396b73dfd6178fc6b",
+    "scripts/preferences.gd": "f839df69d4d74af00c8f7ddfd83a7385da954a1b1cf466d853c20116f2eb5e23",
+    "scripts/progression.gd": "16d94a11ee023c0ca915f1a33a8e3f47944101ec3744564aa3ccc6bf1a6017ea",
+    "scripts/rewarded_ads.gd": "24f2e53a7b7fd19fc74050987209f78421ca5f77782497cdea01aa7f572ed05d",
+    "scripts/stars_store.gd": "b10e2577222038807d154d26bcd004294b880b444f6fb561e290a36d65d7dddb",
+    "scripts/world.gd": "d7d421a4d55f25ce7fbf50b82265679a4720b40cc8af70d4eec695dc82e908a2",
+    "web/mobile_shell.html": "b04257e9f90537c3c99b7b6d4e34a65ab98ef3c0ea682a3317d21cc34b3919be",
+    "web/stars_bridge.js": "9f6680b35e2c2c58d313048f2d2ce147d2dcaa24bc92984fe06b0df0ae7ce08f",
+    "web/telegram_bridge.js": "292f4b484b770bf828e4b32adfb6538cd68f3b1ccef7a6c9da5e71e84bea94ab",
+    "telegram_backend/schema.sql": "0fa61be0bda7b543b3081736df38c3869f840f300b3ef22a9d4fa278f867eaba",
+    "telegram_backend/worker.js": "724f452c16d99fd7b8875fbf0f15fd63936ed8c64d79fa356ff3ed93c55b9ccc"
+  },
+  "engine_files_reused_byte_identically": true,
+  "save_identity": {
+    "user_dir": "SigmaSpeedClickerPrototype",
+    "progress_filename": "progress.json",
+    "preferences_filename": "settings.cfg",
+    "save_schema_version": 2
+  },
+  "pack": {
+    "name": "index.084.pck",
+    "bytes": 5283760,
+    "sha256": "a7fae71cf7cd7ebd7833a63b99cb16a58f7eeb9e52efc78076b1ad5169d1fcee"
+  },
+  "validation_limits": [
+    "Layout and input tested in native headless Godot 4.5.1; web bootstrap tested in Node. A physical Android or live Telegram WebGL session was not used for these checks."
+  ]
+}
